@@ -1,0 +1,13 @@
+server: "connect.echocloud.space:16770"
+auth: "dasfs0a488ynkt1q"
+tls:
+  sni: "connect.echocloud.space"
+  insecure: false
+  alpn:
+    - "h3"
+obfs:
+  type: salamander
+  salamander:
+    password: "e0tsxwwokzssaf2h"
+socks5:
+  listen: "127.0.0.1:41809"

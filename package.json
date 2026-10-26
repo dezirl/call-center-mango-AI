@@ -1,0 +1,22 @@
+{
+  "name": "voice-bridge-desktop",
+  "private": true,
+  "version": "0.3.0",
+  "scripts": {
+    "tauri": "node tools/tauri_cli.mjs",
+    "desktop:dev": "node tools/desktop_dev.mjs",
+    "desktop:package": "npm run tauri build",
+    "desktop:build": "npm run tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.1",
+    "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "@fullcalendar/core": "^6.1.21",
+    "@fullcalendar/daygrid": "^6.1.21",
+    "@fullcalendar/interaction": "^6.1.21",
+    "@fullcalendar/list": "^6.1.21",
+    "@fullcalendar/timegrid": "^6.1.21"
+  }
+}

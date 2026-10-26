@@ -1,0 +1,2 @@
+2026-09-08T14:02:13+03:00	[34mINFO[0m	client mode
+2026-09-08T14:02:18+03:00	[31mFATAL[0m	failed to initialize client	{"error": "connect error: timeout: no recent network activity"}

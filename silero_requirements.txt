@@ -1,0 +1,10 @@
+torch==2.7.0
+torchaudio==2.7.0
+omegaconf>=2.3.0
+soundfile>=0.12.0
+silero-vad==6.2.2
+# The GPU wheel also includes CPUExecutionProvider, so one portable build can
+# run on NVIDIA PCs with CUDA and fall back to CPU on machines without it.
+onnxruntime-gpu==1.26.0
+onnx-asr==0.12.0
+huggingface-hub>=1.32.0

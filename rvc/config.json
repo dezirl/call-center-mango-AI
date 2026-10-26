@@ -1,0 +1,4 @@
+{
+  "enabled": true,
+  "command_template": "{python_cmd} -u \"{rvc_script}\" --model \"{model_path}\" --input \"{input_wav}\" --output \"{output_wav}\" --index \"{index_path}\" --index-rate 0.75 --f0-method pm --overwrite"
+}

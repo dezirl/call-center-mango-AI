@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice Bridge</title>
+    <link rel="stylesheet" href="styles.css?v=calendar-1" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="appbar">
+        <div class="brand-lockup">
+          <p class="eyebrow"><span class="live-dot"></span> Groq STT · OpenAI LLM · Silero TTS v5.5</p>
+          <h1>Voice Bridge</h1>
+        </div>
+        <div class="appbar-actions">
+          <div class="status" id="status" data-kind="idle">Готово.</div>
+          <button id="settingsBtn" class="icon-button" type="button" aria-label="Открыть настройки" title="Настройки"><span aria-hidden="true">&#9881;</span></button>
+        </div>
+      </header>
+
+      <section class="workspace-intro">
+        <div>
+          <p class="section-kicker">LIVE VOICE WORKSPACE</p>
+          <h2>Говорите. Остальное сделает поток.</h2>
+          <p>Запишите вопрос или загрузите аудио. Текст пройдёт через STT и LLM, а затем будет озвучен целиком сохранённым голосом.</p>
+        </div>
+        <div class="pipeline-strip" aria-label="Pipeline"><span>01 <b>STT</b></span><i>→</i><span>02 <b>LLM</b></span><i>→</i><span>03 <b>TTS</b></span></div>
+      </section>
+
+      <section class="system-strip" aria-label="Состояние системы">
+        <div class="system-card"><div class="system-card-head"><span>CPU</span><strong id="cpuMetricValue">—</strong></div><div class="segment-bar" id="cpuMetricBar" aria-hidden="true"></div><small id="cpuMetricMeta">Проверка нагрузки…</small></div>
+        <div class="system-card"><div class="system-card-head"><span>ОЗУ</span><strong id="memoryMetricValue">—</strong></div><div class="segment-bar" id="memoryMetricBar" aria-hidden="true"></div><small id="memoryMetricMeta">Проверка памяти…</small></div>
+        <div class="system-card"><div class="system-card-head"><span>GPU</span><strong id="gpuMetricValue">—</strong></div><div class="segment-bar" id="gpuMetricBar" aria-hidden="true"></div><small id="gpuMetricMeta">Проверка CUDA…</small></div>
+        <div class="activity-card"><div class="system-card-head"><span>PIPELINE</span><strong id="pipelineStage">Готово</strong></div><div class="progress-track"><span id="pipelineProgress"></span></div><small id="pipelineMessage">Ожидаю запуск.</small></div>
+      </section>
+
+      <section class="panel vision-panel" id="visionPanel">
+        <div class="panel-heading"><div><p class="section-kicker">VISION INBOX</p><h2>Контакты с изображений</h2></div><span class="panel-mark">OPENAI VISION</span></div>
+        <p class="field-help">После анализа выбери распознанные контакты и добавь их в очередь.</p>
+        <div class="vision-layout">
+          <div class="vision-chat-column">
+            <div class="vision-chat" id="visionChat"><div class="vision-empty">Вставь сюда скриншот или фото с именами и номерами через Ctrl+V.</div></div>
+            <div class="vision-dropzone" id="visionDropzone" tabindex="0"><strong>Вставь изображения</strong><span>Ctrl+V · перетащи файлы · можно несколько</span><input id="visionFileInput" type="file" accept="image/*" multiple /></div>
+            <div class="vision-pending" id="visionPending"></div>
+            <textarea id="visionPrompt" class="short-textarea" placeholder="Промт для извлечения контактов"></textarea>
+            <div class="row compact-row vision-action-row"><button id="visionAnalyzeBtn" class="accent vision-analyze-btn" type="button">Проанализировать изображения</button><button id="visionClearHistoryBtn" class="ghost" type="button">Очистить чат</button></div>
+          </div>
+          <aside class="vision-queue-column"><div class="field-caption"><span>Очередь на звонок</span><button id="visionClearQueueBtn" class="text-button" type="button">Очистить</button></div><div class="vision-queue" id="visionQueue"><div class="vision-empty">Очередь пока пуста.</div></div></aside>
+        </div>
+        <p class="field-help">Добавленные контакты появятся в очереди. Звонок запускается отдельно из очереди.</p>
+      </section>
+
+      <section class="workspace-grid">
+        <section class="panel input-panel">
+          <div class="legacy-input-tools" hidden>
+            <div class="panel-heading"><div><p class="section-kicker">01 / input</p><h2>Источник</h2></div><span class="panel-mark">MIC / FILE</span></div>
+            <div class="capture-zone"><div class="capture-icon" aria-hidden="true">◉</div><h3>Запишите или выберите файл</h3><p>Последняя запись сохраняется локально и доступна после перезапуска приложения.</p><div class="row"><button id="recordBtn" class="primary" type="button">● Записать</button><button id="stopBtn" class="ghost" type="button" disabled>■ Стоп</button></div><input id="fileInput" type="file" accept="audio/*" /><p class="upload-state" id="inputAudioState">Нет сохранённого входного аудио.</p></div>
+            <div class="row action-row"><button id="transcribeBtn" class="ghost" type="button">Распознать</button><button id="bridgeBtn" class="accent" type="button">▶ Запустить поток</button></div><button id="speakBtn" class="wide-button ghost" type="button">Озвучить текущий текст</button>
+            <div class="quick-note"><span class="note-dot"></span><span>Параметры подключения и локального голоса открываются по шестерёнке.</span></div>
+          </div>
+          <section class="call-panel">
+            <div class="panel-heading compact-heading"><div><p class="section-kicker">MANGO TALKER</p><h3>Звонок через приложение</h3></div><div class="call-status-tools"><span class="call-timer" id="callTimer">00:00</span><span class="call-indicator" id="callIndicator">OFF</span></div></div>
+            <div class="settings-grid two-columns call-grid"><label class="field"><span>Имя и фамилия кандидата</span><input id="mangoCandidateName" type="text" autocomplete="name" placeholder="Иван Иванов" /></label><label class="field"><span>Номер</span><input id="mangoNumber" type="tel" inputmode="tel" autocomplete="tel" placeholder="79041234567" /></label><label class="field"><span>Максимальная длина реплики STT</span><input id="mangoListenSeconds" type="number" min="5" max="60" step="1" value="60" /><small class="field-help">Запись начинается при голосе и отправляется после паузы примерно в 1 секунду.</small></label></div>
+            <div class="row action-row"><button id="mangoStartBtn" class="accent" type="button">Позвонить</button><button id="mangoStopBtn" class="danger" type="button" disabled>Завершить</button></div>
+            <label class="field"><span>SMS после звонка</span><textarea id="mangoSmsMessage" class="short-textarea" placeholder="Текст сообщения для последнего звонка…"></textarea></label>
+            <div class="row compact-row"><button id="mangoSmsBtn" class="ghost" type="button">Отправить SMS через Mango</button></div>
+            <label class="field"><span>Имя и фамилия кандидата для теста</span><input id="dialogTestName" type="text" autocomplete="name" placeholder="Иван Иванов" /></label>
+            <label class="field"><span>Тест диалога без звонка</span><textarea id="dialogTestInput" class="short-textarea" placeholder="Напиши ответ кандидата, например: «Да, актуально» или «Нет»…"></textarea></label>
+            <div class="row compact-row"><button id="dialogTestBtn" class="ghost" type="button">Начать тестовый диалог</button></div>
+            <p class="field-help">Если поле пустое, кнопка сразу запустит голосовой тест: Яна поздоровается, затем будет слушать микрофон. Если текст введён, он будет обработан как ответ кандидата.</p>
+            <div class="voice-dialog-block"><div class="field-caption"><span>Голосовой диалог без звонка</span><span class="stream-badge"><span class="live-dot"></span> hands-free</span></div><div class="settings-grid voice-dialog-options"><label class="field"><span>Максимальная длина реплики</span><input id="voiceDialogMaxSeconds" type="number" min="5" max="60" step="1" value="60" /><small class="field-help">Можно говорить до минуты. STT отправится после паузы в 1 секунду.</small></label></div><div class="row compact-row"><button id="voiceDialogStartBtn" class="accent" type="button">Начать голосовой диалог</button><button id="voiceDialogStopBtn" class="danger" type="button" disabled>Остановить</button></div><p class="field-help" id="voiceDialogState">Нажми старт и говори в микрофон. Во время ответа можно перебить TTS голосом.</p></div>
+            <p class="field-help" id="mangoCallState">Номер вводится здесь, консоль для звонка не нужна.</p>
+            <section class="candidate-data-panel" aria-live="polite">
+              <div class="field-caption"><span>Данные кандидата</span><span id="candidateStage">Ожидание</span></div>
+              <dl class="candidate-data-grid">
+                <div><dt>Имя</dt><dd id="candidateName">—</dd></div>
+                <div><dt>Возраст и город</dt><dd id="candidateAgeCity">—</dd></div>
+                <div><dt>Компьютер</dt><dd id="candidateComputer">—</dd></div>
+                <div><dt>Гражданство</dt><dd id="candidateCitizenship">—</dd></div>
+                <div><dt>Учёба или работа</dt><dd id="candidateEmployment">—</dd></div>
+                <div><dt>Формат учёбы</dt><dd id="candidateStudyFormat">—</dd></div>
+                <div><dt>Занятость и отработка</dt><dd id="candidateWorkDetails">—</dd></div>
+                <div><dt>Комментарий</dt><dd id="candidateObjection">—</dd></div>
+              </dl>
+              <div class="candidate-report-wrap"><div class="field-caption"><span>Краткий отчёт</span></div><pre id="candidateReport" class="candidate-report">Пока нет ответов кандидата.</pre></div>
+            </section>
+            <section class="calendar-panel" aria-live="polite">
+              <div class="panel-heading compact-heading calendar-heading"><div><p class="section-kicker">SCHEDULE</p><h3>Календарь собеседований</h3></div><span class="calendar-zone">Europe/Moscow · UTC+3</span></div>
+              <p class="field-help calendar-intro">Выбери дату в месяце. Клик откроет весь рабочий день, а свободные окна идут с шагом двадцать минут. Правый клик по времени откроет меню статуса.</p>
+              <input id="calendarDate" class="calendar-date-state" type="date" tabindex="-1" aria-hidden="true" />
+              <div id="calendarView" class="calendar-view"></div>
+              <details class="calendar-settings">
+                <summary>Рабочие часы и перерывы</summary>
+                <div class="calendar-settings-grid">
+                  <label class="field"><span>Рабочий день с</span><input id="calendarWorkStart" type="time" value="10:00" /></label>
+                  <label class="field"><span>До</span><input id="calendarWorkEnd" type="time" value="20:00" /></label>
+                  <label class="field calendar-break-field"><span>Перерывы</span><input id="calendarBreaks" type="text" value="13:00-14:00" placeholder="13:00-14:00, 16:00-16:30" /><small class="field-help">Формат: начало-конец, через запятую.</small></label>
+                  <label class="field"><span>Шаг слотов</span><select id="calendarSlotMinutes"><option value="20" selected>20 минут</option><option value="30">30 минут</option><option value="40">40 минут</option><option value="60">60 минут</option></select><small class="field-help">Для звонков по умолчанию двадцать минут.</small></label>
+                </div>
+                <div class="row compact-row"><button id="calendarRefreshBtn" class="ghost" type="button">Обновить</button><button id="calendarSaveSettingsBtn" class="primary" type="button">Сохранить график</button></div>
+                <p class="field-help">В режиме дня можно протянуть мышью по времени, чтобы добавить диапазон перерыва. Затем нажми «Сохранить график».</p>
+              </details>
+              <div class="calendar-booking-form">
+                <div class="field-caption"><span>Запланировать вручную</span><span class="field-help">или выбери свободный слот выше</span></div>
+                <div class="settings-grid two-columns"><label class="field"><span>Кандидат</span><input id="calendarTitle" type="text" placeholder="Имя кандидата" /></label><label class="field"><span>Номер</span><input id="calendarPhone" type="tel" placeholder="79041234567" /></label></div>
+                <div class="row compact-row"><button id="calendarBookBtn" class="accent" type="button">Запланировать выбранное время</button></div>
+              </div>
+              <div class="calendar-events" id="calendarEvents"><span class="field-help">Запланированных встреч пока нет.</span></div>
+            </section>
+          </section>
+        </section>
+
+        <section class="panel output-panel">
+          <div class="panel-heading"><div><p class="section-kicker">02 / output</p><h2>Диалог</h2></div><span class="panel-mark">STREAMING</span></div>
+          <div class="text-block"><div class="field-caption"><span>Транскрипция</span><div class="meta"><span><b id="detectedLang">—</b> язык</span><span><b id="duration">—</b> длительность</span></div></div><textarea id="transcript" placeholder="Здесь появится распознанная речь..."></textarea></div>
+          <div class="text-block reply-block"><div class="field-caption"><span>Ответ нейронки</span><span class="stream-badge"><span class="live-dot"></span> ready</span></div><textarea id="reply" placeholder="Ответ LLM появится здесь и будет озвучен целиком..."></textarea></div>
+          <div class="player-shell"><div class="field-caption"><span>Последняя озвучка</span><span class="label">WAV</span></div><audio id="player" controls hidden></audio></div>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog" class="settings-dialog">
+      <div class="settings-surface">
+        <header class="settings-header"><div><p class="section-kicker">CONTROL CENTER</p><h2>Настройки приложения</h2><p>Изменения сохраняются автоматически в этом устройстве.</p></div><button id="closeSettingsBtn" class="icon-button" type="button" aria-label="Закрыть настройки" title="Закрыть">×</button></header>
+        <div class="settings-scroll">
+          <section class="settings-section"><div class="settings-section-title"><span class="section-number">01</span><div><h3>Подключения</h3><p>Ключи и маршруты внешних сервисов.</p></div></div><div class="settings-grid two-columns"><label class="field"><span>Groq API key</span><input id="apiKey" type="password" placeholder="gsk_..." autocomplete="off" /></label><label class="field"><span>STT model / способ</span><select id="sttModel"><option value="whisper-large-v3-turbo">Groq Whisper large-v3 Turbo · API</option><option value="whisper-large-v3">Groq Whisper large-v3 · API</option><option value="gigaam-v2-ctc">GigaAM v2 CTC · локально / ONNX</option></select><small class="field-help" id="sttModelHelp">GigaAM работает локально на русском. Модель уже включена в portable-сборку.</small></label><label class="field"><span>Язык распознавания</span><select id="language"><option value="auto">Auto</option><option value="en">English</option><option value="ru">Russian</option><option value="es">Spanish</option><option value="de">German</option><option value="fr">French</option><option value="it">Italian</option><option value="pt">Portuguese</option><option value="tr">Turkish</option><option value="ja">Japanese</option><option value="ko">Korean</option></select></label><label class="field"><span>LLM / способ</span><select id="llmProvider"><option value="local-qwen3-1.7b">Qwen3 1.7B · локально / llama.cpp</option><option value="openai-compatible">OpenAI-compatible API</option></select><small class="field-help" id="localLlmState">Qwen3 1.7B встроена в portable-сборку в формате Q4_K_M. Thinking выключен, лимит ответа 384 токена.</small><label class="field"><span>OpenAI-compatible base URL</span><input id="llmBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false" /></label><label class="field"><span>OpenAI API key</span><input id="llmApiKey" type="password" placeholder="sk-..." autocomplete="off" /></label><label class="field"><span>OpenAI model</span><input id="llmModel" type="text" placeholder="gpt-4o-mini" spellcheck="false" /></label></div><label class="field"><span>System prompt</span><textarea id="systemPrompt" class="short-textarea" placeholder="Необязательные инструкции для LLM..."></textarea></label><div class="settings-subsection"><div class="settings-section-title"><span class="section-number">V</span><div><h3>OpenAI Vision</h3><p>Провайдер для анализа изображений с именами и номерами.</p></div></div><div class="settings-grid two-columns"><label class="field"><span>Vision base URL</span><input id="visionBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false" /></label><label class="field"><span>Vision API key</span><input id="visionApiKey" type="password" placeholder="sk-..." autocomplete="off" /></label><label class="field"><span>Vision model</span><input id="visionModel" type="text" placeholder="gpt-4o-mini" spellcheck="false" /></label></div><label class="toggle-row compact-toggle"><span><strong>Vision через VPN</strong><small>Отдельно от маршрута основной LLM. Требует включённый туннель.</small></span><input id="visionUseVpn" type="checkbox" /></label><small class="field-help">Подойдёт OpenAI-compatible провайдер с поддержкой vision. Например: URL заканчивается на <code>/v1</code>, модель поддерживает изображения.</small></div></section>
+
+          <section class="settings-section"><div class="settings-section-title"><span class="section-number">TG</span><div><h3>Telegram-уведомления</h3><p>Статус звонка и анкета по итогам разговора.</p></div></div><div class="settings-grid two-columns"><label class="field"><span>Токен бота</span><input id="telegramBotToken" type="password" autocomplete="off" placeholder="123456:token" /></label><label class="field"><span>Разрешённые chat ID</span><textarea id="telegramChatIds" class="short-textarea" placeholder="Например: 123456789, -1001234567890"></textarea></label></div><div class="row compact-row"><button id="telegramTestBtn" class="ghost" type="button">Проверить Telegram</button></div><small class="field-help">ФИО, номер и краткая анкета отправляются по итогам звонка. Chat ID можно указать несколько, через запятую.</small></section>
+
+          <section class="settings-section"><div class="settings-section-title"><span class="section-number">02</span><div><h3>Локальный голос</h3><p>Silero загружает выбранный голос один раз и повторно использует его в памяти.</p></div></div><div class="engine-badge"><div><span class="section-kicker">LOCAL ENGINE</span><strong>Silero TTS v5.5 · PyTorch</strong></div><small>Русская модель v5.5 и английская v3. Переключение CPU/GPU доступно ниже.</small></div><div class="settings-grid two-columns"><label class="field"><span>Движок</span><select id="ttsModel"><option value="silero-v5.5">Silero v5.5 · PyTorch</option></select><small class="field-help" id="ttsModelHelp">Модель загружается в память только при первом запуске речи.</small></label><label class="field"><span>Язык TTS</span><select id="ttsLanguage"><option value="ru" selected>Русский</option><option value="en">English</option></select></label><label class="field"><span>Голос</span><select id="ttsSpeaker"><option value="xenia">Xenia</option></select><small class="field-help">Для английского используется отдельный набор голосов Silero.</small></label></div>
+            <section class="device-panel"><div class="panel-heading compact-heading"><div><p class="section-kicker">ACCELERATION</p><h3>Режим вычислений</h3></div><span class="device-label" id="ttsDeviceLabel">CPU</span></div><div class="device-switch-row"><span class="device-choice muted-choice">CPU</span><button id="ttsDeviceSwitch" class="ios-switch" type="button" role="switch" aria-checked="false" aria-label="Переключить локальную модель между CPU и GPU"><span class="ios-switch-thumb"></span></button><span class="device-choice">GPU</span></div><p class="field-help" id="ttsDeviceHelp">CPU активен. GPU появится после установки CUDA-сборки PyTorch и драйвера NVIDIA.</p></section>
+             <div class="settings-grid two-columns"><label class="field"><span>Темп речи <span class="info-tip" tabindex="0" data-tip="Скорость готовой речи." title="Скорость речи">?</span></span><input id="pace" type="range" min="0.7" max="1.4" step="0.05" value="1" /><div class="range-line"><span>Медленнее</span><strong id="paceValue">1.00×</strong><span>Быстрее</span></div><small class="field-help">Темп применяется после генерации Silero.</small></label><details class="advanced-settings"><summary>Расширенные параметры</summary><div class="advanced-grid"><label class="field"><span>Temperature <span class="info-tip" tabindex="0" data-tip="Silero v5.5 не использует sampling temperature." title="Temperature">?</span> <output id="ttsTemperatureValue">0.70</output></span><input id="ttsTemperature" type="range" min="0.1" max="1.5" step="0.05" value="0.7" /></label><label class="field"><span>Top K <span class="info-tip" tabindex="0" data-tip="Silero v5.5 не использует Top K." title="Top K">?</span></span><input id="ttsTopK" type="number" min="1" max="100" step="1" value="5" /></label></div></details></div></section>
+
+          <section class="settings-section"><div class="settings-section-title"><span class="section-number">03</span><div><h3>RVC post-processing</h3><p>После Silero готовый WAV можно автоматически прогнать через одну RVC-модель.</p></div></div><div class="engine-badge"><div><span class="section-kicker">OPTIONAL VOICE CONVERSION</span><strong>Silero → RVC</strong></div><small>RVC не смешивает голоса, а преобразует результат Silero в тембр выбранной модели.</small></div><label class="toggle-row"><span><strong>Включить RVC после Silero</strong><small>Работает только после загрузки .pth и настройки команды RVC.</small></span><input id="rvcEnabled" type="checkbox" /></label><div class="settings-grid two-columns"><label class="field"><span>RVC-модель <span class="info-tip" tabindex="0" data-tip="Основной файл обученной RVC-модели формата .pth." title="RVC-модель">?</span></span><input id="rvcModelFile" type="file" accept=".pth" /></label><label class="field"><span>RVC-индекс <span class="info-tip" tabindex="0" data-tip="Файл .index улучшает сходство тембра. Он необязателен для запуска." title="RVC-индекс">?</span></span><input id="rvcIndexFile" type="file" accept=".index" /></label></div><div class="row compact-row"><button id="saveRvcBtn" class="primary" type="button">Сохранить RVC</button><button id="deleteRvcBtn" class="danger" type="button">Удалить</button><button id="openRvcFolderBtn" class="ghost" type="button">Открыть папку</button></div><p class="field-help" id="rvcState">RVC отключён.</p><label class="field field-wide"><span>Команда RVC <span class="info-tip" tabindex="0" data-tip="Python и infer_cli.py подставляются автоматически. Доступны placeholders: {python_cmd}, {rvc_script}, {input_wav}, {output_wav}, {model_path}, {index_path}." title="Шаблон команды">?</span></span><input id="rvcCommandTemplate" type="text" placeholder="{python_cmd} -u &quot;{rvc_script}&quot; --model &quot;{model_path}&quot; --input &quot;{input_wav}&quot; --output &quot;{output_wav}&quot; --index &quot;{index_path}&quot; --index-rate 0.75 --f0-method pm --overwrite" spellcheck="false" /></label></section>
+
+          <section class="settings-section"><div class="settings-section-title"><span class="section-number">04</span><div><h3>Данные и кэш</h3><p>Silero не клонирует голос по референсу: используются встроенные голоса модели.</p></div></div><div class="storage-panel"><div class="storage-row"><span><strong>Входное аудио</strong><small id="settingsInputAudioState">Управляется с главного экрана</small></span><button id="openAudioFolderBtn" class="ghost" type="button">Открыть</button><button id="deleteAudioBtn" class="danger" type="button">Удалить</button></div><div class="storage-row"><span><strong>Готовые WAV</strong><small id="outputStorageState">Загрузка...</small></span><button id="openOutputFolderBtn" class="ghost" type="button">Открыть</button><button id="deleteOutputsBtn" class="danger" type="button">Очистить</button></div><div class="storage-row"><span><strong>Silero model cache</strong><small id="modelStorageState">Загрузка...</small></span><button id="openModelFolderBtn" class="ghost" type="button">Открыть</button><span></span></div></div></section>
+
+          <section class="settings-section"><div class="settings-section-title"><span class="section-number">05</span><div><h3>Аудиомаршрутизация</h3><p>TTS и STT используют разные направления VB-CABLE, чтобы голос не зацикливался обратно в распознавание.</p></div></div><div class="engine-badge"><div><span class="section-kicker">WINDOWS AUDIO</span><strong>Виртуальный кабель или обычные устройства</strong></div><small id="audioDeviceState">Загрузка устройств…</small></div><div class="settings-grid two-columns"><label class="field"><span>Вывод TTS → Mango</span><select id="audioOutputDevice"><option value="">Системное устройство по умолчанию</option></select><small class="field-help"><strong>CABLE Input</strong> — это устройство воспроизведения. Voice Bridge пишет сюда TTS, а в Mango нужно выбрать парный <strong>CABLE Output</strong> как микрофон. Само приложение драйвер Windows не создаёт.</small></label><label class="field"><span>Вход STT / loopback</span><select id="audioLoopbackDevice"><option value="">Основной выход Windows</option></select><small class="field-help">Выбери loopback, где слышен собеседник. Не ставь тот же кабель, куда уходит TTS, иначе STT может услышать собственный ответ и запустить цикл.</small></label></div><div class="row compact-row"><button id="refreshAudioDevicesBtn" class="ghost" type="button">Обновить устройства</button><button id="testAudioRouteBtn" class="ghost" type="button">Проверить TTS-канал</button><button id="saveAudioSettingsBtn" class="primary" type="button">Сохранить аудиомаршрут</button></div></section>
+
+          <section class="settings-section"><div class="settings-section-title"><span class="section-number">06</span><div><h3>VPN-маршрут</h3><p>Только запросы STT и LLM, системный интернет не меняется.</p></div></div><div class="vpn-panel"><div class="panel-heading compact-heading"><div><p class="section-kicker">PRIVATE ROUTE</p><h3>Hysteria tunnel</h3></div><span class="vpn-indicator" id="vpnIndicator">OFF</span></div><label class="toggle-row"><span><strong>Включить туннель</strong><small>Запросы будут идти через локальный SOCKS5.</small></span><input id="vpnEnabled" type="checkbox" /></label><div class="vpn-state" id="vpnState">Клиент не запущен</div><div class="row vpn-actions"><button id="vpnStartBtn" class="primary" type="button">Запустить</button><button id="vpnStopBtn" class="ghost" type="button">Остановить</button><button id="vpnDownloadBtn" class="ghost" type="button">Скачать клиент</button></div><label class="toggle-row compact-toggle"><span><strong>STT через VPN</strong><small>Маршрут к Groq Whisper.</small></span><input id="vpnForStt" type="checkbox" checked /></label><label class="toggle-row compact-toggle"><span><strong>LLM через VPN</strong><small>Маршрут к OpenAI-compatible API.</small></span><input id="vpnForLlm" type="checkbox" checked /></label></div></section>
+        </div>
+        <footer class="settings-footer"><span>Voice Bridge · локальные файлы и кэш не удаляются при закрытии.</span><button id="doneSettingsBtn" class="primary" type="button">Готово</button></footer>
+      </div>
+    </dialog>
+    <script src="app.js?v=20261001-vision-queue"></script>
+  </body>
+</html>
